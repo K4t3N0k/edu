@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js" integrity="sha512-894YE6QWD5I59HgZOGReFYm4dnWc1Qt5NtvYSaNcOP+u1T9qYdvdihz0PPSiiqn/+/3e7Jo4EaG7TubfWGUrMQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.33.0/min/vs/editor/editor.main.min.css" integrity="sha512-633RnebxsjmF57QUx9c85T6XILSAuJFzKnN5dVsUQ3nsc7c0bW649fCj1Z8ZkAbo5vAHnKZIsGqDokJRiABupA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <style>
+    * {
+        padding: 0px;
+        margin: 0px;
+    }
+    body {
+        background-color: #1E1E1E;
+        overflow: hidden;
+    }
+    .mainContainer {
+        margin-left: 10%;
+        width: 80%;
+        height: 100vh;
+        display: flex;
+        flex-direction: row;
+    }
+    .leftContainer {
+        flex: 6;
+        display: flex;
+        flex-direction: column;
+    }
+    .rightContainer {
+        flex: 4;
+        display: flex;
+        flex-direction: column;
+    }
+    .leftContainerTop {
+        flex-direction: column;
+        flex: 3;
+        border: 1px solid #383838;
+        color: #ffffff;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+        padding-left: 24px;
+        padding-right: 24px;
+    }
+    .leftContainerBottom {
+        flex-direction: column;
+        flex: 10;
+        border: 1px solid #383838;
+        color: #C6C6C6;
+    }
+    .rightContainerTop {
+        flex: 0;
+        border: 1px solid #383838;
+        color: #C6C6C6;
+    }
+    .rightContainerBottom {
+        flex: 6;
+        border: 1px solid #383838;
+        color: #ffffff;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+        padding-left: 24px;
+        padding-right: 24px;
+    }
+    .buttonSubmit {
+        background-color: #608B4E;
+        color: #ffffff;
+        border: 0px;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+        font-size: larger;
+        width: 100%;
+        height: 30px;
+        left: 50%;
+        top: 100%;
+        position: relative;
+        transform: translate(-50%, -100%);
+    }
+    .codeBlock {
+        font-family:'Courier New', Courier, monospace;
+        background-color: #464646;
+        padding-left: 6px;
+    }
+    </style>
+</head>
+
+<body>
+    <script type="text/javascript" src="https://unpkg.com/monaco-editor@latest/min/vs/loader.js"></script>
+    <script>
+        require.config({ paths: { 'vs': 'https://unpkg.com/monaco-editor@latest/min/vs' }})
+        window.MonacoEnvironment = {
+          getWorkerUrl: function(workerId, label) {
+            return `data:text/javascript;charset=utf-8,${encodeURIComponent(`
+              self.MonacoEnvironment = {
+                baseUrl: 'https://unpkg.com/monaco-editor@latest/min/'
+              };
+              importScripts('https://unpkg.com/monaco-editor@latest/min/vs/base/worker/workerMain.js');`
+            )}`
+          }
+        }
+
+        let editor
+        require(["vs/editor/editor.main"], function () {
+const startText = `/**
+* @param {number} value 
+* @returns {number}
+*/
+function test(value) {
+    return 0
+}`
+            const editorContainerElement = document.getElementById("editorContainer")
+            editor = monaco.editor.create(editorContainerElement, {
+                language: 'javascript',
+                theme: 'vs-dark',
+                minimap: {
+                        enabled: false
+                    },
+                value: startText
+                })
+            window.addEventListener('resize', () => {
+            }, false)
+        })
+
+        function startTestCases() {
+            const testCases = [
+                {
+                    args: 123,
+                    result: 321
+                },
+                {
+                    args: 1230,
+                    result: 321
+                },
+                {
+                    args: 1728,
+                    result: 8271
+                },
+                {
+                    args: 7777,
+                    result: 7777
+                },
+                {
+                    args: -123,
+                    result: -321
+                },
+                {
+                    args: -1234,
+                    result: -4321
+                },
+                {
+                    args: 102,
+                    result: 201
+                }
+            ]
+
+            let valid = true
+            let s = ""
+            console.clear()
+            for (let i = 0; i < testCases.length; i++) {
+                const scriptString = 'try {\n' + editor.getValue() + '\n return test(' + testCases[i].args + ') } catch { return null }'
+                const functionString = Function(`"use strict"; ${scriptString}`)
+                
+                let result
+                try {
+                    result = functionString.bind({})()
+                }
+                catch (runtimeError) {
+                    console.error(runtimeError.name, ": ", runtimeError.message);
+                }
+
+                if (result !== testCases[i].result) {
+                    valid = false
+                    console.log((i + 1) + ' ❌ test case failed')
+                    console.log('input:', testCases[i].args)
+                    console.log('output:', result)
+                    console.log('expected:', testCases[i].result)
+
+                    s += (i + 1) + ' ❌ Test case failed<br>'
+                    s += 'input: <p class="codeBlock">' + testCases[i].args + '</p>'
+                    s += 'output: <p class="codeBlock">' + result + '</p>'
+                    s += 'expected: <p class="codeBlock">' + testCases[i].result + '</p>'
+                    break
+                } else {
+                    console.log((i + 1) + ' ✅ test case passed')
+                    s += `${i + 1} ✅ Test case passed <br>`
+                }
+            }
+            if (valid) {
+                console.log('💚 all cases passed')
+                s += '💚 All cases passed'
+            }
+            const logElement = document.getElementById("log")
+            logElement.innerHTML = s
+        }
+    </script>
+
+    <div class="mainContainer">
+        <div class="leftContainer">
+            <div class="leftContainerTop">
+                <h2 id="sample-markdown">Циклы</h2>
+                <p>Преобразуйте целое число, что бы его цифры следовали в обратном порядке.</p>
+                <br>
+                <h2 id="second-heading">Example:</h2>
+                <p>input: <p class="codeBlock">123</p></p>
+                <p>output: <p class="codeBlock">321</p></p>
+            </div>
+            <div class="leftContainerBottom" id="editorContainer">
+    
+            </div>
+        </div>
+        <div class="rightContainer">
+            <div class="rightContainerTop">
+                <button class="buttonSubmit" onclick="startTestCases()">▶</button>
+            </div>
+            <div class="rightContainerBottom" id="log">
+    
+            </div>
+        </div>
+    </div>
+</body>
+
+</html>
