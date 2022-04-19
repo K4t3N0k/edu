@@ -101,11 +101,11 @@
         let editor
         require(["vs/editor/editor.main"], function () {
 const startText = `/**
-* @param {number} value 
-* @returns {number}
+* @param {string} line 
+* @returns {boolean}
 */
-function test(value) {
-    return 0
+function test(line) {
+    return false
 }`
             const editorContainerElement = document.getElementById("editorContainer")
             editor = monaco.editor.create(editorContainerElement, {
@@ -123,40 +123,48 @@ function test(value) {
         function startTestCases() {
             const testCases = [
                 {
-                    args: 123,
-                    result: 321
+                    args: 'А роза упала на лапу Азора.',
+                    result: true
                 },
                 {
-                    args: 1230,
-                    result: 321
+                    args: 'The quick brown fox jumps over the lazy dog.',
+                    result: false
                 },
                 {
-                    args: 1728,
-                    result: 8271
+                    args: 'Съешь еще этих мягких французских булок, да выпей чаю.',
+                    result: false
                 },
                 {
-                    args: 7777,
-                    result: 7777
+                    args: 'Искать такси',
+                    result: true
                 },
                 {
-                    args: -123,
-                    result: -321
+                    args: 'Он — верба, но / Она — бревно',
+                    result: true
                 },
                 {
-                    args: -1234,
-                    result: -4321
+                    args: 'Молебен о коне белом',
+                    result: true
                 },
                 {
-                    args: 102,
-                    result: 201
-                }
+                    args: 'MAMA',
+                    result: false
+                },
+                {
+                    args: 'ΝΙΨΟΝ ΑΝΟΜΗΜΑΤΑ ΜΗ ΜΟΝΑΝ ΟΨΙΝ',
+                    result: true
+                },
+                {
+                    args: 'Учуя молоко, я около мяучу',
+                    result: true
+                },
             ]
 
             let valid = true
             let s = ""
             console.clear()
             for (let i = 0; i < testCases.length; i++) {
-                const scriptString = 'try {\n' + editor.getValue() + '\n return test(' + testCases[i].args + ') } catch { return null }'
+                const scriptString = 'try {\n' + editor.getValue() + '\n return test("' + testCases[i].args + '") } catch { return null }'
                 const functionString = Function(`"use strict"; ${scriptString}`)
                 
                 let result
@@ -182,6 +190,7 @@ function test(value) {
                 } else {
                     console.log((i + 1) + ' ✅ test case passed')
                     s += `${i + 1} ✅ Test case passed <br>`
+                    s += 'input: <p class="codeBlock">' + testCases[i].args + '</p>'
                 }
             }
             if (valid) {
@@ -196,12 +205,13 @@ function test(value) {
     <div class="mainContainer">
         <div class="leftContainer">
             <div class="leftContainerTop">
-                <h2 id="sample-markdown">Циклы</h2>
-                <p>Преобразуйте целое число, что бы его цифры следовали в обратном порядке.</p>
+                <h2 id="sample-markdown">Строки</h2>
+                <p>Определить, является ли предложение палиндромом.</p>
+                <p>В предложение обязательно есть символы букв.</p>
                 <br>
                 <h2 id="second-heading">Example:</h2>
-                <p>input: <p class="codeBlock">123</p></p>
-                <p>output: <p class="codeBlock">321</p></p>
+                <p>input: <p class="codeBlock">А роза упала на лапу Азора.</p></p>
+                <p>output: <p class="codeBlock">true</p></p>
             </div>
             <div class="leftContainerBottom" id="editorContainer">
     
@@ -209,7 +219,7 @@ function test(value) {
         </div>
         <div class="rightContainer">
             <div class="rightContainerTop">
-                <button class="buttonSubmit" onclick="startTestCases()">▶</button>
+                <button class="buttonSubmit" onclick="startTestCases()">Submit</button>
             </div>
             <div class="rightContainerBottom" id="log">
     
