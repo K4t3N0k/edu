@@ -180,26 +180,30 @@
                     return true
                 }
 
+                const scale = 30
                 pixiGraphics.clear()
+                pixiGraphics.lineStyle(1, 0xffffff, 0.15)
+                for (let i = -6; i < 6; i++) {
+                    pixiGraphics.moveTo(i * scale, -300).lineTo(i * scale, 300)
+                    pixiGraphics.moveTo(-300, i * scale).lineTo(300, i * scale)
+                }
                 pixiGraphics.lineStyle(1, 0xffffff, 0.25)
                 pixiGraphics.moveTo(0, -300).lineTo(0, 300)
                 pixiGraphics.moveTo(-300, 0).lineTo(300, 0)
                 pixiGraphics.x = 150
                 pixiGraphics.y = 150
             
-                const scale = 30
                 pixiGraphics.lineStyle(1, 0xffffff, 1)
                 pixiGraphics.drawCircle(testCases[i].args[0].x * scale, -testCases[i].args[0].y * scale, testCases[i].args[0].r * scale)
-                pixiGraphics.lineStyle(1, 0xffffff, 1)
-                pixiGraphics.drawCircle(testCases[i].args[1].x * scale, -testCases[i].args[1].y * scale, 2)
-                pixiGraphics.lineStyle(1, 0x00ff00, 1)
-                pixiGraphics.drawCircle(testCases[i].result.x * scale, -testCases[i].result.y * scale, 2)
+
+                pixiGraphics.lineStyle(0, 0xffffff, 1)
+                pixiGraphics.beginFill(0xffffff, 1).drawCircle(testCases[i].args[1].x * scale, -testCases[i].args[1].y * scale, 2).endFill()
+                pixiGraphics.beginFill(0x00ff00, 1).drawCircle(testCases[i].result.x * scale, -testCases[i].result.y * scale, 2).endFill()
 
                 if (!compareResult(result, testCases[i].result)) {
 
                     if (result.hasOwnProperty('x') && result.hasOwnProperty('y') && typeof result.x === 'number' && typeof result.y === 'number') {
-                        pixiGraphics.lineStyle(1, 0xff0000, 1)
-                        pixiGraphics.drawCircle(result.x * scale, -result.y * scale, 2)
+                        pixiGraphics.beginFill(0xff0000, 1).drawCircle(result.x * scale, -result.y * scale, 2).endFill()
                     }
 
                     valid = false
@@ -209,10 +213,10 @@
                     console.log('expected:', testCases[i].result)
 
                     s += (i + 1) + ' ❌ Test case failed<br>'
-                    s += 'input: <p class="codeBlock">circle = ' + JSON.stringify(testCases[i].args[0], bLog, ' ').replaceAll('"', '') + '</p>'
+                    s += '<span style="color: #ffffff">●</span> input: <p class="codeBlock">circle = ' + JSON.stringify(testCases[i].args[0], bLog, ' ').replaceAll('"', '') + '</p>'
                     s += '<p class="codeBlock">point = ' + JSON.stringify(testCases[i].args[1], bLog, ' ').replaceAll('"', '') + '</p>'
-                    s += 'output: <p class="codeBlock">' + JSON.stringify(result, bLog, ' ').replaceAll('"', '') + '</p>'
-                    s += 'expected: <p class="codeBlock">' + JSON.stringify(testCases[i].result, bLog, ' ').replaceAll('"', '') + '</p>'
+                    s += '<span style="color: #ff0000">●</span> output: <p class="codeBlock">' + JSON.stringify(result, bLog, ' ').replaceAll('"', '') + '</p>'
+                    s += '<span style="color: #00ff00">●</span> expected: <p class="codeBlock">' + JSON.stringify(testCases[i].result, bLog, ' ').replaceAll('"', '') + '</p>'
                     break
                 } else {
                     console.log((i + 1) + ' ✅ test case passed')
