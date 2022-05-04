@@ -6,6 +6,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Document</title>
 
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pixi.js/5.1.3/pixi.min.js"></script>
+
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js" integrity="sha512-894YE6QWD5I59HgZOGReFYm4dnWc1Qt5NtvYSaNcOP+u1T9qYdvdihz0PPSiiqn/+/3e7Jo4EaG7TubfWGUrMQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.33.0/min/vs/editor/editor.main.min.css" integrity="sha512-633RnebxsjmF57QUx9c85T6XILSAuJFzKnN5dVsUQ3nsc7c0bW649fCj1Z8ZkAbo5vAHnKZIsGqDokJRiABupA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
     <style>
@@ -36,7 +38,7 @@
     }
     .leftContainerTop {
         flex-direction: column;
-        flex: 3;
+        flex: 4;
         border: 1px solid #383838;
         color: #ffffff;
         font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
@@ -50,9 +52,13 @@
         color: #C6C6C6;
     }
     .rightContainerTop {
-        flex: 0;
+        flex: 3;
         border: 1px solid #383838;
         color: #C6C6C6;
+        display: flex;
+        justify-content: center;
+        flex-direction: column-reverse;
+        align-items: center;
     }
     .rightContainerBottom {
         flex: 6;
@@ -72,110 +78,130 @@
         height: 30px;
         left: 50%;
         top: 100%;
-        position: relative;
-        transform: translate(-50%, -100%);
+        /* position: relative; */
+        /* transform: translate(-50%, -100%); */
     }
     .codeBlock {
         font-family:'Courier New', Courier, monospace;
         background-color: #464646;
         padding-left: 6px;
     }
+    .errorBlock {
+        font-family:'Courier New', Courier, monospace;
+        background-color: #464646;
+        color: #ff7070;
+        padding-left: 6px;
+    }
     </style>
 </head>
 
 <body>
-    <script type="text/javascript" src="https://unpkg.com/monaco-editor@latest/min/vs/loader.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.33.0/min/vs/loader.min.js"></script>
     <script>
-        require.config({ paths: { 'vs': 'https://unpkg.com/monaco-editor@latest/min/vs' }})
+        require.config({ paths: { 'vs': 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.33.0/min/vs/' }})
         window.MonacoEnvironment = {
           getWorkerUrl: function(workerId, label) {
             return `data:text/javascript;charset=utf-8,${encodeURIComponent(`
               self.MonacoEnvironment = {
-                baseUrl: 'https://unpkg.com/monaco-editor@latest/min/'
+                baseUrl: 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.33.0/min/'
               };
-              importScripts('https://unpkg.com/monaco-editor@latest/min/vs/base/worker/workerMain.js');`
+              importScripts('https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.33.0/min/vs/base/worker/workerMain.min.js');`
             )}`
           }
         }
 
+        let pixiApplication, pixiGraphics
+
         let editor
         require(["vs/editor/editor.main"], function () {
-const startText = `/**
-* @param {string} line 
-* @returns {boolean}
-*/
-function test(line) {
-    return false
-}`
             const editorContainerElement = document.getElementById("editorContainer")
             editor = monaco.editor.create(editorContainerElement, {
                 language: 'javascript',
                 theme: 'vs-dark',
-                minimap: {
-                        enabled: false
-                    },
-                value: startText
+                minimap: { enabled: false },
+                value: ''
                 })
-            window.addEventListener('resize', () => {
-            }, false)
+            window.addEventListener('resize', () => { editor.layout() }, false)
         })
 
-        function startTestCases() {
-            const testCases = [
-                {
-                    args: 'А роза упала на лапу Азора.',
-                    result: true
-                },
-                {
-                    args: 'The quick brown fox jumps over the lazy dog.',
-                    result: false
-                },
-                {
-                    args: 'Съешь еще этих мягких французских булок, да выпей чаю.',
-                    result: false
-                },
-                {
-                    args: 'Искать такси',
-                    result: true
-                },
-                {
-                    args: 'Он — верба, но / Она — бревно',
-                    result: true
-                },
-                {
-                    args: 'Молебен о коне белом',
-                    result: true
-                },
-                {
-                    args: 'MAMA',
-                    result: false
-                },
-                {
-                    args: 'ΝΙΨΟΝ ΑΝΟΜΗΜΑΤΑ ΜΗ ΜΟΝΑΝ ΟΨΙΝ',
-                    result: true
-                },
-                {
-                    args: 'Учуя молоко, я около мяучу',
-                    result: true
-                },
-            ]
+        function logError(error) {
+            const correctLineNumber = (lineNumber) => { return lineNumber - 3 }
+            const logElement = document.getElementById("log")
+            logElement.innerHTML = '<p class="errorBlock">line: ' + correctLineNumber(error.lineNumber) + '<br>' + error.name + ": " + error.message + '</p>'
+            console.error(error.name, ": ", error.message)
+        }
 
+        let testCases = []
+        function startTestCases() {
+
+            let isError = false
             let valid = true
             let s = ""
             console.clear()
             for (let i = 0; i < testCases.length; i++) {
-                const scriptString = 'try {\n' + editor.getValue() + '\n return test("' + testCases[i].args + '") } catch { return null }'
-                const functionString = Function(`"use strict"; ${scriptString}`)
-                
+                const scriptString = 'try {\n' + editor.getValue() + '\n return test(' + JSON.stringify(testCases[i].args[0]).replaceAll('"', '') + ', ' + JSON.stringify(testCases[i].args[1]).replaceAll('"', '') + ') } catch(error) { return error }'
+
+                let functionString
                 let result
+
+                try {
+                    functionString = Function(`"use strict"; ${scriptString}`)
+                } catch (error) {
+                    isError = true
+                    logError(error)
+                    break
+                }
+                
                 try {
                     result = functionString.bind({})()
-                }
-                catch (runtimeError) {
-                    console.error(runtimeError.name, ": ", runtimeError.message);
+                    if (result instanceof ReferenceError) {
+                        isError = true
+                        logError(result)
+                        break
+                    }
+                } catch (error) {
+                    isError = true
+                    logError(error)
+                    break
                 }
 
-                if (result !== testCases[i].result) {
+                const bLog = (key, value) => {
+                    if (typeof value === 'number' && !Number.isInteger(value)) {
+                        return value.toFixed(4)
+                    }
+                    return value
+                }
+
+                const compareResult = (a, b) => {
+                    if (!a.hasOwnProperty('x')) return false
+                    if (a.x.toFixed(4) !== b.x.toFixed(4)) return false
+                    if (!a.hasOwnProperty('y')) return false
+                    if (a.y.toFixed(4) !== b.y.toFixed(4)) return false
+                    return true
+                }
+
+                pixiGraphics.clear()
+                pixiGraphics.lineStyle(1, 0xffffff, 0.25)
+                pixiGraphics.moveTo(0, -300).lineTo(0, 300)
+                pixiGraphics.moveTo(-300, 0).lineTo(300, 0)
+                pixiGraphics.x = 150
+                pixiGraphics.y = 150
+            
+                const scale = 30
+                pixiGraphics.lineStyle(1, 0xffffff, 1)
+                pixiGraphics.drawCircle(testCases[i].args[0].x * scale, -testCases[i].args[0].y * scale, testCases[i].args[0].r * scale)
+                pixiGraphics.lineStyle(1, 0xffffff, 1)
+                pixiGraphics.drawCircle(testCases[i].args[1].x * scale, -testCases[i].args[1].y * scale, 2)
+                pixiGraphics.lineStyle(1, 0x00ff00, 1)
+                pixiGraphics.drawCircle(testCases[i].result.x * scale, -testCases[i].result.y * scale, 2)
+
+                if (!compareResult(result, testCases[i].result)) {
+
+                    if (result.hasOwnProperty('x') && result.hasOwnProperty('y') && typeof result.x === 'number' && typeof result.y === 'number') {
+                        pixiGraphics.lineStyle(1, 0xff0000, 1)
+                        pixiGraphics.drawCircle(result.x * scale, -result.y * scale, 2)
+                    }
+
                     valid = false
                     console.log((i + 1) + ' ❌ test case failed')
                     console.log('input:', testCases[i].args)
@@ -183,43 +209,132 @@ function test(line) {
                     console.log('expected:', testCases[i].result)
 
                     s += (i + 1) + ' ❌ Test case failed<br>'
-                    s += 'input: <p class="codeBlock">' + testCases[i].args + '</p>'
-                    s += 'output: <p class="codeBlock">' + result + '</p>'
-                    s += 'expected: <p class="codeBlock">' + testCases[i].result + '</p>'
+                    s += 'input: <p class="codeBlock">circle = ' + JSON.stringify(testCases[i].args[0], bLog, ' ').replaceAll('"', '') + '</p>'
+                    s += '<p class="codeBlock">point = ' + JSON.stringify(testCases[i].args[1], bLog, ' ').replaceAll('"', '') + '</p>'
+                    s += 'output: <p class="codeBlock">' + JSON.stringify(result, bLog, ' ').replaceAll('"', '') + '</p>'
+                    s += 'expected: <p class="codeBlock">' + JSON.stringify(testCases[i].result, bLog, ' ').replaceAll('"', '') + '</p>'
                     break
                 } else {
                     console.log((i + 1) + ' ✅ test case passed')
                     s += `${i + 1} ✅ Test case passed <br>`
-                    s += 'input: <p class="codeBlock">' + testCases[i].args + '</p>'
                 }
             }
-            if (valid) {
-                console.log('💚 all cases passed')
-                s += '💚 All cases passed'
+            
+            if (!isError) {
+                if (valid) {
+                    console.log('💚 all cases passed')
+                    s += '💚 All cases passed'
+                }
+                const logElement = document.getElementById("log")
+                logElement.innerHTML = s
             }
-            const logElement = document.getElementById("log")
-            logElement.innerHTML = s
+        }
+    
+        function init(theme, description, exampleInput, exampleOutput, itestCases, editorValue) {
+            const themeElement = document.getElementById('theme')
+            themeElement.innerText = theme
+
+            const descriptionElement = document.getElementById('description')
+            descriptionElement.innerText = description
+
+            const exampleInputElement = document.getElementById('exampleInput')
+            exampleInputElement.innerText = exampleInput
+    
+            const exampleOutputElement = document.getElementById('exampleOutput')
+            exampleOutputElement.innerText = exampleOutput
+
+            testCases = itestCases
+
+            editor.setValue(editorValue)
+        }
+
+        window.onload = () => {
+
+            const rightContainerTop = document.getElementById("rightContainerTop")
+            pixiApplication = new PIXI.Application({ antialias: true, width: 300, height: 300 })
+            // pixiApplication.view.style.
+            rightContainerTop.appendChild(pixiApplication.view)
+            pixiGraphics = new PIXI.Graphics()
+            pixiApplication.stage.addChild(pixiGraphics)
+
+
+            const theme = 'Геометрия'
+            const description = 'Найти ближайшую точку на окружности.'
+            const exampleInput = 'circle = { x: 0, y: 2, r: 1 }\npoint = { x: 3, y: 2 }'
+            const exampleOutput = '{ x: 1, y: 2 }'
+            const testCases = [
+                {
+                    args: [
+                        { x: 0, y: 2, r: 1 },
+                        { x: 3, y: 2 },
+                    ],
+                    result: { x: 1, y: 2 }
+                },
+                {
+                    args: [
+                        { x: -4, y: 1, r: 2 },
+                        { x: -2, y: -3 },
+                    ],
+                    result: { x: -3.1056, y: -0.7889 }
+                },
+                {
+                    args: [
+                        { x: 0, y: 0, r: 3 },
+                        { x: 1, y: 5 },
+                    ],
+                    result: { x: 0.5883, y: 2.9417 }
+                },
+                {
+                    args: [
+                        { x: 6, y: 2, r: 2 },
+                        { x: 0, y: 0 },
+                    ],
+                    result: { x: 4.1026, y: 1.3675 }
+                },
+                {
+                    args: [
+                        { x: 3, y: 4, r: 3 },
+                        { x: 3, y: 3 },
+                    ],
+                    result: { x: 3, y: 1 }
+                },
+                {
+                    args: [
+                        { x: -1, y: -1, r: 3.5 },
+                        { x: -2, y: -2 },
+                    ],
+                    result: { x: -3.4749, y: -3.4749 }
+                },
+            ]
+            const editorValue = `/**
+* @param {{ x: number, y: number, r: number }} circle 
+* @param {{ x: number, y: number }} point 
+* @returns {{ x: number, y: number }}
+*/
+function test(circle, point) {
+    return { x: 0, y: 0 }
+}`
+            init(theme, description, exampleInput, exampleOutput, testCases, editorValue)
         }
     </script>
 
     <div class="mainContainer">
         <div class="leftContainer">
             <div class="leftContainerTop">
-                <h2 id="sample-markdown">Строки</h2>
-                <p>Определить, является ли предложение палиндромом.</p>
-                <p>В предложение обязательно есть символы букв.</p>
+                <h2 id="theme">Theme</h2>
+                <p id="description">Description</p>
                 <br>
-                <h2 id="second-heading">Example:</h2>
-                <p>input: <p class="codeBlock">А роза упала на лапу Азора.</p></p>
-                <p>output: <p class="codeBlock">true</p></p>
+                <h2>Example:</h2>
+                <p>input: <p class="codeBlock" id="exampleInput">Example Input</p></p>
+                <p>output: <p class="codeBlock" id="exampleOutput">Example Output</p></p>
             </div>
             <div class="leftContainerBottom" id="editorContainer">
     
             </div>
         </div>
         <div class="rightContainer">
-            <div class="rightContainerTop">
-                <button class="buttonSubmit" onclick="startTestCases()">Submit</button>
+            <div class="rightContainerTop" id="rightContainerTop">
+                <button class="buttonSubmit" onclick="startTestCases()">▶</button>
             </div>
             <div class="rightContainerBottom" id="log">
     
