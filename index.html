@@ -282,6 +282,14 @@
                     args: [
                         { x: 1, y: 2 },
                         { x: 1, y: 0 },
+                        { x: 3, y: 0 },
+                    ],
+                    result: 'right'
+                },
+                {
+                    args: [
+                        { x: 1, y: 2 },
+                        { x: 1, y: 0 },
                         { x: 3, y: 2 },
                     ],
                     result: 'acute'
@@ -390,7 +398,7 @@
 * @returns {string}
 */
 function test(p1, p2, p3) {
-    return 'right'
+    return 'acute'
 }`
             init(theme, description, exampleInput, exampleOutput, testCases, editorValue)
         }
