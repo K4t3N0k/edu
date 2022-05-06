@@ -274,7 +274,7 @@
 
             const theme = 'Геометрия'
             const description = 'Найти угол между двумя прямыми заданными точками { p1, p2 } и { p2, p3 }.\nВывести тип угла acute, right, obtuse, straight, reflex, full.'
-            const exampleInput = 'p1 = { x: -4, y: 0 }\np2 = { x: 0, y: 0 }\np3 = { x: 0, y: 2 }'
+            const exampleInput = 'p1 = { x: 1, y: 2 }\np2 = { x: 1, y: 0 }\np3 = { x: 3, y: 0 }'
             const exampleOutput = '\'right\''
             const testCases = [
                 // acute, right, obtuse, straight, reflex, full.
@@ -307,6 +307,14 @@
                         { x: 0, y: 2 },
                         { x: 0, y: 0 },
                         { x: 2, y: 0 },
+                    ],
+                    result: 'right'
+                },
+                {
+                    args: [
+                        { x: -4, y: 0 },
+                        { x: 0, y: 0 },
+                        { x: 0, y: 2 },
                     ],
                     result: 'right'
                 },
